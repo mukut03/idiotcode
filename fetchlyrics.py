@@ -20,7 +20,15 @@ artist_name = None
 
 
 def getLyrics(song_id):
-    lyrics = genius.lyrics(song_id, remove_section_headers=True)
+    retries = 0
+    while retries < 3:
+        try:
+            lyrics = genius.lyrics(song_id, remove_section_headers=True)
+            break
+        except Timeout as e:
+            retries += 1
+            continue
+
     return lyrics
 
 
@@ -86,6 +94,8 @@ def get_artist_songs(artist_id):
     # get all the song ids, excluding not-primary-artist songs.
     songs = [song["id"] for song in songs
              if song["primary_artist"]["id"] == artist_id]
+    #urls = [song["url"] for song in songs
+            #if song["primary_artist"]["id"]==artist_id]
     print("got all songs")
     with open('song_ids.pkl', 'wb') as f:
         pickle.dump(songs, f)
@@ -104,20 +114,26 @@ def get_artistId(artistName):
 
 
 def get_allLyrics():
-    artist_name = input("Enter artist name ")
-    artist_id = get_artistId(artist_name)
-    songs = get_artist_songs(artist_id)
+    songs_file = open('song_ids.pkl', 'rb')
+    songs = pickle.load(songs_file)
+
+    # artist_name = input("Enter artist name ")
+    # artist_id = get_artistId(artist_name)
+    # #songs = get_artist_songs(artist_id)
     all_lyrics = []
-    for song_id in tqdm(songs):
-        all_lyrics.append(getLyrics(song_id))
+    csv_details = ["song_id", "lyrics"]
+
+    with open("idiotlyrics.csv", "w+") as f:
+        write = csv.writer(f)
+        write.writerow(csv_details)
+        for song_id in tqdm(songs):
+            lyrics = getLyrics(song_id)
+            all_lyrics.append(lyrics)
+            row = [song_id, lyrics]
+            write.writerow(row)
+
     lyric_data = list(zip(songs, all_lyrics))
     return lyric_data
 
 
 lyr = get_allLyrics()
-print(lyr)
-
-print("writing all lyrics")
-with open("idiotlyrics.csv","w+") as my_csv:
-    csvWriter = csv.writer(my_csv,delimiter=',')
-    csvWriter.writerows(lyr)
