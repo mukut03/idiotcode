@@ -137,3 +137,5 @@ def get_allLyrics():
 
 
 lyr = get_allLyrics()
+print("all done")
+print(lyr)
